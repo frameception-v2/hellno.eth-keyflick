@@ -93,8 +93,9 @@ Please refer to Satori’s documentation for a list of supported HTML and CSS fe
         tw="h-full w-full flex flex-col justify-center items-center relative"
         style={BACKGROUND_GRADIENT_STYLE}
       >
-        <h1 tw="text-9xl text-center font-semibold">{PROJECT_TITLE}</h1>
-        <h3 tw="text-4xl font-normal">{PROJECT_DESCRIPTION}</h3>
+        <h1 tw="text-8xl text-center font-semibold">🔑 {PROJECT_TITLE}</h1>
+        <h3 tw="text-3xl font-normal mt-4">One-Click Disposable EVM & Solana Keys</h3>
+        <h3 tw="text-2xl font-normal mt-4">⚠️ For Testing Purposes Only</h3>
       </div>
     ),
     options
