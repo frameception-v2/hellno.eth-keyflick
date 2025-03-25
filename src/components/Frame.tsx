@@ -29,22 +29,32 @@ import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 
 function KeyGenerator() {
-  const [evmKey, setEvmKey] = useState('');
-  const [solKey, setSolKey] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [evmKeys, setEvmKeys] = useState<string[]>([]);
+  const [solKeys, setSolKeys] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('evm');
+  const [pageNumber, setPageNumber] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const generateKeys = useCallback(async (chain: 'evm' | 'sol') => {
+  const generatePageKeys = useCallback(async (chain: 'evm' | 'sol', page: number) => {
     setIsLoading(true);
     try {
+      const keys = [];
+      const startIndex = page * 128;
+      
       if (chain === 'evm') {
-        // Generate EVM private key
-        const wallet = ethers.Wallet.createRandom();
-        setEvmKey(`Private Key: ${wallet.privateKey}\nAddress: ${wallet.address}`);
+        for (let i = 0; i < 128; i++) {
+          const wallet = ethers.Wallet.fromIndex(startIndex + i);
+          keys.push(`Private Key: ${wallet.privateKey}\nAddress: ${wallet.address}`);
+        }
+        setEvmKeys(keys);
       } else {
-        // Generate Solana keypair
-        const keypair = Keypair.generate();
-        setSolKey(`Private Key: ${bs58.encode(keypair.secretKey)}\nAddress: ${keypair.publicKey.toBase58()}`);
+        for (let i = 0; i < 128; i++) {
+          const seed = new Uint8Array(32);
+          new Uint32Array(seed.buffer).set([startIndex + i]);
+          const keypair = Keypair.fromSeed(seed);
+          keys.push(`Private Key: ${bs58.encode(keypair.secretKey)}\nAddress: ${keypair.publicKey.toBase58()}`);
+        }
+        setSolKeys(keys);
       }
     } catch (error) {
       console.error('Key generation failed:', error);
@@ -70,53 +80,91 @@ function KeyGenerator() {
           
           <TabsContent value="evm">
             <div className="space-y-4">
-              <Button 
-                onClick={() => generateKeys('evm')}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Generating...' : 'Generate EVM Key'}
-              </Button>
-              {evmKey && (
-                <div className="relative">
-                  <pre className="p-2 bg-gray-100 rounded-md text-xs break-words">
-                    {evmKey}
-                  </pre>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="absolute top-1 right-1"
-                    onClick={() => navigator.clipboard.writeText(evmKey)}
-                  >
-                    📋
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="number"
+                  value={pageNumber}
+                  onChange={(e) => setPageNumber(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="border rounded px-2 w-32"
+                  placeholder="Page number"
+                />
+                <Button 
+                  onClick={() => generatePageKeys('evm', pageNumber)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Loading...' : 'Load Page'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const randomPage = Math.floor(Math.random() * Math.pow(2, 256 - 7));
+                    setPageNumber(randomPage);
+                    generatePageKeys('evm', randomPage);
+                  }}
+                >
+                  Random Page
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {evmKeys.map((key, index) => (
+                  <div key={index} className="relative p-2 bg-gray-100 rounded-md">
+                    <pre className="text-xs break-words">{key}</pre>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute top-1 right-1"
+                      onClick={() => navigator.clipboard.writeText(key)}
+                    >
+                      📋
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="sol">
             <div className="space-y-4">
-              <Button 
-                onClick={() => generateKeys('sol')}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Generating...' : 'Generate SOL Key'}
-              </Button>
-              {solKey && (
-                <div className="relative">
-                  <pre className="p-2 bg-gray-100 rounded-md text-xs break-words">
-                    {solKey}
-                  </pre>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="absolute top-1 right-1"
-                    onClick={() => navigator.clipboard.writeText(solKey)}
-                  >
-                    📋
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="number"
+                  value={pageNumber}
+                  onChange={(e) => setPageNumber(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="border rounded px-2 w-32"
+                  placeholder="Page number"
+                />
+                <Button 
+                  onClick={() => generatePageKeys('sol', pageNumber)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Loading...' : 'Load Page'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const randomPage = Math.floor(Math.random() * Math.pow(2, 256 - 7));
+                    setPageNumber(randomPage);
+                    generatePageKeys('sol', randomPage);
+                  }}
+                >
+                  Random Page
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {solKeys.map((key, index) => (
+                  <div key={index} className="relative p-2 bg-gray-100 rounded-md">
+                    <pre className="text-xs break-words">{key}</pre>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute top-1 right-1"
+                      onClick={() => navigator.clipboard.writeText(key)}
+                    >
+                      📋
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
