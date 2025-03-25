@@ -16,7 +16,6 @@ import {
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
-import { config } from "~/components/providers/WagmiProvider";
 import { truncateAddress } from "~/lib/truncateAddress";
 import { base, optimism } from "wagmi/chains";
 import { useSession } from "next-auth/react";
@@ -43,7 +42,7 @@ function KeyGenerator() {
       
       if (chain === 'evm') {
         for (let i = 0; i < 128; i++) {
-          const wallet = ethers.Wallet.fromIndex(startIndex + i);
+          const wallet = new ethers.Wallet(ethers.id((startIndex + i).toString()));
           keys.push(`Private Key: ${wallet.privateKey}\nAddress: ${wallet.address}`);
         }
         setEvmKeys(keys);
