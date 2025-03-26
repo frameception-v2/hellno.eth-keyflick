@@ -6,6 +6,7 @@ import sdk, {
   SignIn as SignInCore,
   type Context,
 } from "@farcaster/frame-sdk";
+import bs58 from "bs58"; // Reverted to default import
 import {
   Card,
   CardHeader,
@@ -25,7 +26,7 @@ import { PROJECT_TITLE } from "~/lib/constants";
 
 import { ethers } from "ethers";
 import { Keypair } from "@solana/web3.js";
-import bs58 from "bs58";
+
 
 function KeyGenerator() {
   const [evmKeys, setEvmKeys] = useState<string[]>([]);
@@ -39,7 +40,7 @@ function KeyGenerator() {
     try {
       const keys = [];
       const startIndex = page * 128;
-      
+
       if (chain === 'evm') {
         for (let i = 0; i < 128; i++) {
           const wallet = new ethers.Wallet(ethers.id((startIndex + i).toString()));
@@ -51,6 +52,7 @@ function KeyGenerator() {
           const seed = new Uint8Array(32);
           new Uint32Array(seed.buffer).set([startIndex + i]);
           const keypair = Keypair.fromSeed(seed);
+          // Use bs58.encode from the default import
           keys.push(`Private Key: ${bs58.encode(keypair.secretKey)}\nAddress: ${keypair.publicKey.toBase58()}`);
         }
         setSolKeys(keys);
@@ -76,7 +78,7 @@ function KeyGenerator() {
             <TabsTrigger value="evm">EVM</TabsTrigger>
             <TabsTrigger value="sol">Solana</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="evm">
             <div className="space-y-4">
               <div className="flex gap-2 mb-4">
@@ -87,7 +89,7 @@ function KeyGenerator() {
                   className="border rounded px-2 w-32"
                   placeholder="Page number"
                 />
-                <Button 
+                <Button
                   onClick={() => generatePageKeys('evm', pageNumber)}
                   disabled={isLoading}
                 >
@@ -108,9 +110,9 @@ function KeyGenerator() {
                 {evmKeys.map((key, index) => (
                   <div key={index} className="relative p-2 bg-gray-100 rounded-md">
                     <pre className="text-xs break-words">{key}</pre>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="absolute top-1 right-1"
                       onClick={() => navigator.clipboard.writeText(key)}
                     >
@@ -132,7 +134,7 @@ function KeyGenerator() {
                   className="border rounded px-2 w-32"
                   placeholder="Page number"
                 />
-                <Button 
+                <Button
                   onClick={() => generatePageKeys('sol', pageNumber)}
                   disabled={isLoading}
                 >
@@ -153,9 +155,9 @@ function KeyGenerator() {
                 {solKeys.map((key, index) => (
                   <div key={index} className="relative p-2 bg-gray-100 rounded-md">
                     <pre className="text-xs break-words">{key}</pre>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="absolute top-1 right-1"
                       onClick={() => navigator.clipboard.writeText(key)}
                     >

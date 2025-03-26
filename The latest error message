@@ -1,0 +1,1 @@
+Type error: Module '"bs58"' has no exported member 'encode'. Did you mean to use 'import encode from "bs58"' instead?
