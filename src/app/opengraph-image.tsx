@@ -44,7 +44,7 @@ async function initializeFonts() {
 
     imageOptions = {
       width: 1200,
-      height: 800,
+      height: 800, // Adjusted height for more content
       fonts: [
         {
           name: "Nunito",
@@ -70,30 +70,34 @@ async function initializeFonts() {
 export default async function Image() {
   const options = await initializeFonts();
 
-  const BACKGROUND_GRADIENT_START = "#c026d3";
-  const BACKGROUND_GRADIENT_END = "#ef4444";
+  const BACKGROUND_GRADIENT_START = "#1f2937"; // Darker background
+  const BACKGROUND_GRADIENT_END = "#374151";
+  const WARNING_COLOR = "#facc15"; // Yellow for warning
+  const TEXT_COLOR = "#f9fafb"; // Light text
+
   const BACKGROUND_GRADIENT_STYLE = {
     backgroundImage: `linear-gradient(to bottom, ${BACKGROUND_GRADIENT_START}, ${BACKGROUND_GRADIENT_END})`,
-    color: "white",
+    color: TEXT_COLOR,
   };
 
   /*
-this Image is rendered using vercel/satori.
-
-Satori supports a limited subset of HTML and CSS features, due to its special use cases. In general, only these static and visible elements and properties that are implemented.
-For example, the <input> HTML element, the cursor CSS property are not in consideration. And you can't use <style> tags or external resources via <link> or <script>.
-Also, Satori does not guarantee that the SVG will 100% match the browser-rendered HTML output since Satori implements its own layout engine based on the SVG 1.1 spec.
-Please refer to Satori’s documentation for a list of supported HTML and CSS features. https://github.com/vercel/satori#css
-*/
+  Satori documentation: https://github.com/vercel/satori#css
+  */
   return new ImageResponse(
     (
       <div
-        tw="h-full w-full flex flex-col justify-center items-center relative"
+        tw="h-full w-full flex flex-col justify-center items-center relative p-10" // Added padding
         style={BACKGROUND_GRADIENT_STYLE}
       >
-        <h1 tw="text-8xl text-center font-semibold">🔑 {PROJECT_TITLE}</h1>
-        <h3 tw="text-3xl font-normal mt-4">One-Click Disposable EVM & Solana Keys</h3>
-        <h3 tw="text-2xl font-normal mt-4">⚠️ For Testing Purposes Only</h3>
+        <h1 tw="text-7xl text-center font-semibold mb-4">🔑 {PROJECT_TITLE}</h1>
+        <h3 tw="text-3xl font-normal text-center mb-8">{PROJECT_DESCRIPTION}</h3>
+        {/* Warning Message */}
+        <div tw="flex items-center justify-center p-4 border-2 rounded-lg" style={{ borderColor: WARNING_COLOR }}>
+           <span tw="text-4xl mr-4" style={{ color: WARNING_COLOR }}>⚠️</span>
+           <h3 tw="text-3xl font-semibold text-center" style={{ color: WARNING_COLOR }}>
+             NEVER use these keys for significant funds! <br/> They are generated in your browser and are not secure.
+           </h3>
+        </div>
       </div>
     ),
     options
