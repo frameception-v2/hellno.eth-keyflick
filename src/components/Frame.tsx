@@ -11,10 +11,7 @@ interface KeyInfo {
 
 type ChainType = "evm" | "solana" | "bitcoin";
 
-// Add Buffer polyfill for browser environment
-if (typeof window !== 'undefined') {
-  window.Buffer = window.Buffer || require('buffer/').Buffer;
-}
+// No Buffer polyfill needed anymore
 
 const Frame: React.FC = () => {
   const [evmKeys, setEvmKeys] = useState<KeyInfo | null>(null);
@@ -73,74 +70,29 @@ const Frame: React.FC = () => {
     }
   }, []);
 
-  const generateBitcoinKeys = useCallback(async () => {
+  const generateBitcoinKeys = useCallback(() => {
     try {
-      // First try to use a simpler approach that doesn't rely on WebAssembly
-      // This is a fallback for iframe environments where WebAssembly might be restricted
-      try {
-        // Use ethers.js to generate a random wallet and derive Bitcoin-like keys from it
-        // This is not a real Bitcoin wallet but works for demo/educational purposes
-        const wallet = ethers.Wallet.createRandom();
-        
-        // Create a simple Bitcoin-like address (this is just for demonstration)
-        // Real Bitcoin address derivation would use proper BIP32/39/44 derivation
-        const address = `1${wallet.address.substring(2, 22)}`;
-        
-        // Format private key in WIF-like format (not real WIF, just for display)
-        const privateKeyWIF = `KY${wallet.privateKey.substring(2, 51)}`;
-        
-        setBitcoinKeys({
-          privateKey: privateKeyWIF,
-          address: address,
-        });
-        
-        // Set a warning that this is using a compatibility mode
-        setLoadError("Note: Bitcoin keys are generated in compatibility mode. These are not real Bitcoin keys but are suitable for demonstration purposes.");
-        
-        return; // Exit early if the simple approach worked
-      } catch (simpleError) {
-        console.log("Simple Bitcoin key generation failed, trying WebAssembly approach...");
-        // Continue to the WebAssembly approach if the simple one failed
-      }
+      // Use ethers.js to generate a random wallet and derive Bitcoin-like keys from it
+      // This is not a real Bitcoin wallet but works for demo/educational purposes
+      const wallet = ethers.Wallet.createRandom();
       
-      // Try the full WebAssembly approach as a fallback
-      // Create a window.Buffer polyfill if needed
-      if (typeof window !== 'undefined' && !window.Buffer) {
-        const { Buffer } = await import("buffer/");
-        window.Buffer = Buffer;
-      }
+      // Create a simple Bitcoin-like address (this is just for demonstration)
+      // Real Bitcoin address derivation would use proper BIP32/39/44 derivation
+      const address = `1${wallet.address.substring(2, 22)}`;
       
-      // Dynamically import Bitcoin libraries only when needed
-      const bitcoin = await import("bitcoinjs-lib");
-      const ecc = await import("tiny-secp256k1");
-      const ECPairFactory = (await import("ecpair")).default;
+      // Format private key in WIF-like format (not real WIF, just for display)
+      const privateKeyWIF = `KY${wallet.privateKey.substring(2, 51)}`;
       
-      const ECPair = ECPairFactory(ecc);
-      const keyPair = ECPair.makeRandom();
-      
-      // Use Buffer safely
-      const pubkeyBuffer = Buffer.from(keyPair.publicKey);
-      
-      const { address } = bitcoin.payments.p2pkh({
-        pubkey: pubkeyBuffer,
-      });
-      
-      const privateKeyWIF = keyPair.toWIF();
-
-      if (!address) {
-        throw new Error("Failed to generate Bitcoin address");
-      }
-
       setBitcoinKeys({
         privateKey: privateKeyWIF,
         address: address,
       });
       
-      // Clear any previous compatibility mode warning
-      setLoadError(null);
+      // Set a note that this is using simplified Bitcoin key generation
+      setLoadError("Note: Using simplified Bitcoin key generation for compatibility. These are not real Bitcoin keys but are suitable for demonstration purposes.");
     } catch (error) {
       console.error("Error generating Bitcoin keys:", error);
-      setLoadError("Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations in iframes.");
+      setLoadError("Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations.");
     }
   }, []);
 
