@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { PROJECT_TITLE } from "~/lib/constants"; // Assuming constants are in src/lib
 
-// Define the application URL based on the domain in accountAssociation or environment variable
-// Using the domain from the provided payload as a fallback
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL || "https://hellnoeth-keyflick.vercel.app";
+const appUrl = process.env.NEXT_PUBLIC_URL;
 const name = PROJECT_TITLE; // Use project title for the frame name
 
 export async function GET() {
