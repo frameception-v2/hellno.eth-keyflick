@@ -162,37 +162,39 @@ const Frame: React.FC = () => {
     }
   }, []);
 
-  const generateBitcoinKeys = useCallback(() => {
+  const generateBitcoinKeys = useCallback(async () => {
     debugLog("Starting Bitcoin key generation");
 
     try {
       // Clear any previous messages
       setLoadError(null);
-
-      // Use the simplest possible approach
-      debugLog("Using simplified Bitcoin key generation");
-
-      // Generate a random wallet with ethers
-      const wallet = ethers.Wallet.createRandom();
-      const ethAddress = wallet.address;
-
-      // Create a Bitcoin-like address format (not a real Bitcoin address)
-      // This is just for demonstration purposes
-      const address = `1${ethAddress.substring(2, 22)}`;
-
-      // Format private key in a way that looks like a Bitcoin WIF
-      // This is not a real WIF but is suitable for demonstration
-      const privateKeyWIF = `KY${wallet.privateKey.substring(2, 51)}`;
+      
+      // Dynamically import Bitcoin libraries only when needed
+      const bitcoin = await import("bitcoinjs-lib");
+      const ecc = await import("tiny-secp256k1");
+      const { ECPairFactory } = await import("ecpair");
+      
+      // Initialize ECPair with the secp256k1 implementation
+      const ECPair = ECPairFactory(ecc);
+      
+      // Generate a random key pair
+      const keyPair = ECPair.makeRandom();
+      
+      // Get the private key in WIF format
+      const privateKeyWIF = keyPair.toWIF();
+      
+      // Create a P2PKH address (Legacy Bitcoin address)
+      const { address } = bitcoin.payments.p2pkh({ 
+        pubkey: keyPair.publicKey,
+        network: bitcoin.networks.bitcoin 
+      });
 
       setBitcoinKeys({
         privateKey: privateKeyWIF,
-        address: address,
+        address: address || "Error generating address",
       });
 
-      debugLog("Bitcoin key generation successful (simplified method)");
-      setLoadError(
-        "Note: Using simplified Bitcoin key generation for compatibility. These are not standard Bitcoin keys but are suitable for demonstration purposes.",
-      );
+      debugLog("Bitcoin key generation successful");
     } catch (error) {
       debugLog("Error in Bitcoin key generation", error);
       console.error("Error generating Bitcoin keys:", error);
