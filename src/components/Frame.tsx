@@ -180,8 +180,10 @@ const Frame: React.FC = () => {
       const privateKeyWIF = keyPair.toWIF();
 
       // Create a P2PKH address (Legacy Bitcoin address)
+      // Convert Uint8Array to Buffer for bitcoinjs-lib compatibility
+      const pubkeyBuffer = Buffer.from(keyPair.publicKey);
       const { address } = bitcoin.payments.p2pkh({
-        pubkey: keyPair.publicKey,
+        pubkey: pubkeyBuffer,
         network: bitcoin.networks.bitcoin,
       });
 
