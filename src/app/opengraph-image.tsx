@@ -70,13 +70,13 @@ async function initializeFonts() {
 export default async function Image() {
   const options = await initializeFonts();
 
-  const BACKGROUND_GRADIENT_START = "#1f2937"; // Darker background
-  const BACKGROUND_GRADIENT_END = "#374151";
-  const WARNING_COLOR = "#facc15"; // Yellow for warning
-  const TEXT_COLOR = "#f9fafb"; // Light text
+  const BACKGROUND_GRADIENT_START = "#2c3e50"; // Slightly different dark blue/grey
+  const BACKGROUND_GRADIENT_END = "#4ca1af"; // Tealish end color
+  const WARNING_COLOR = "#facc15"; // Yellow for warning (kept)
+  const TEXT_COLOR = "#f9fafb"; // Light text (kept)
 
   const BACKGROUND_GRADIENT_STYLE = {
-    backgroundImage: `linear-gradient(to bottom, ${BACKGROUND_GRADIENT_START}, ${BACKGROUND_GRADIENT_END})`,
+    backgroundImage: `linear-gradient(to bottom right, ${BACKGROUND_GRADIENT_START}, ${BACKGROUND_GRADIENT_END})`, // Changed gradient direction
     color: TEXT_COLOR,
   };
 
@@ -89,7 +89,8 @@ export default async function Image() {
         tw="h-full w-full flex flex-col justify-center items-center relative p-10" // Added padding
         style={BACKGROUND_GRADIENT_STYLE}
       >
-        <h1 tw="text-7xl text-center font-semibold mb-4">🔑 {PROJECT_TITLE}</h1>
+        {/* Changed Icon */}
+        <h1 tw="text-7xl text-center font-semibold mb-4">⚡️ {PROJECT_TITLE}</h1>
         <h3 tw="text-3xl font-normal text-center mb-8">{PROJECT_DESCRIPTION}</h3>
         {/* Warning Message */}
         <div tw="flex items-center justify-center p-4 border-2 rounded-lg" style={{ borderColor: WARNING_COLOR }}>
