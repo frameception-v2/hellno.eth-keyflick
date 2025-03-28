@@ -15,10 +15,13 @@ interface KeyInfo {
 }
 
 type ChainType = "evm" | "solana" | "bitcoin";
+try {
+  const ECPair = ECPairFactory(ecc);
+} catch (error) {
+  console.error("Error initializing ECPair:", error);
+}
 
 const Frame: React.FC = () => {
-  const ECPair = ECPairFactory(ecc);
-
   const [evmKeys, setEvmKeys] = useState<KeyInfo | null>(null);
   const [solanaKeys, setSolanaKeys] = useState<KeyInfo | null>(null);
   const [bitcoinKeys, setBitcoinKeys] = useState<KeyInfo | null>(null); // Added state for Bitcoin
