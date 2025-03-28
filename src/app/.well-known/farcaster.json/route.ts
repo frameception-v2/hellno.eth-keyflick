@@ -1,28 +1,40 @@
 import { NextResponse } from 'next/server';
+import { PROJECT_ID } from '~/lib/constants'; // Assuming you might use this or other constants
 
-// Route handler for Farcaster domain verification
-// See: https://docs.farcaster.xyz/reference/app-ui-api/domain-verification
+// Define the structure for the Farcaster frame metadata
+// (Assuming a structure based on common Farcaster frame practices)
+const frameMetadata = {
+  name: 'KeyFlick: Disposable Crypto Keys',
+  icon: 'key', // Example icon
+  description: 'Generate temporary EVM, Solana, and Bitcoin keys for testing.',
+  button1: 'Generate Keys',
+  postUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://your-app-url.vercel.app'}/api/frame`, // Replace with your actual frame API endpoint
+  // Add other frame-specific fields as needed
+};
+
+// Define the new account association data
+const accountAssociationData = {
+  header: 'eyJmaWQiOiA4Njk5OTksICJ0eXBlIjogImN1c3RvZHkiLCAia2V5IjogIjB4NzZkNTBCMEUxNDc5YTlCYTJiRDkzNUYxRTlhMjdDMGM2NDlDOEMxMiJ9',
+  payload: 'eyJkb21haW4iOiAiaGVsbG5vZXRoLWtleWZsaWNrLnZlcmNlbC5hcHAifQ',
+  signature: 'pKDeGOWamw3zHsvkE84XKnjFcjv5lQgs49-WvDC4AA1Bm5gEkZj3Oq9MfW4r3LsDUrQ5FzJcag0GNa_9j0DkEBw'
+};
 
 export async function GET() {
-  // Return the domain association data required by Farcaster
-  return NextResponse.json({
-    // You might include other metadata here if needed by other services,
-    // but for Farcaster domain verification, only 'accountAssociation' is strictly required.
-    // Example other fields (optional):
-    // name: "KeyFlick Domain Verification",
-    // description: "Farcaster verification endpoint for KeyFlick",
+  // Construct the response object with both keys
+  const responseBody = {
+    accountAssociation: accountAssociationData,
+    frame: frameMetadata, // Keeping the existing frame data structure
+  };
 
-    // The required field for Farcaster domain verification
-    accountAssociation: {
-      header: "eyJmaWQiOiA4Njk5OTksICJ0eXBlIjogImN1c3RvZHkiLCAia2V5IjogIjB4N0Q0MDBGRDFGNTkyYkI0RkNkNmEzNjNCZkQyMDBBNDNEMTY3MDRlNyJ9",
-      payload: "eyJkb21haW4iOiAiaGVsbG5vZXRoLWtleWZsaWNrLnZlcmNlbC5hcHAifQ",
-      signature: "9pXe9pq72FdyfmV82IRMa_mrx3551rBoklHYJS7Z2PMn2CXLGrKzuEPeW2T9JyyotpGB6LgVBAH9Itm1IJr6QBs"
-    }
-  });
+  return NextResponse.json(responseBody);
 }
 
-// Optional: Handle other HTTP methods if necessary, though typically only GET is needed.
-// export async function POST(request: Request) { ... }
-// export async function PUT(request: Request) { ... }
-// export async function DELETE(request: Request) { ... }
-
+// Optional: Handle OPTIONS request for CORS if needed
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Allow': 'GET, OPTIONS',
+    },
+  });
+}
