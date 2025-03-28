@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
+import sdk from "@farcaster/frame-sdk";
+import { FrameContext } from "@farcaster/frame-node";
 
 // Add a debug logging function that works in iframe contexts
 const debugLog = (message: string, data?: any) => {
