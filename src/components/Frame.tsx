@@ -2,21 +2,28 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
-// Remove bip39 import - we'll use simpler methods
+import sdk, { type FrameContext } from "@farcaster/frame-sdk";
 
 // Add a debug logging function that works in iframe contexts
 const debugLog = (message: string, data?: any) => {
   try {
-    console.log(`[FRAME-DEBUG] ${message}`, data || '');
-    
+    console.log(`[FRAME-DEBUG] ${message}`, data || "");
+
     // Also try to communicate with parent window if in iframe
-    if (typeof window !== 'undefined' && window.parent && window.parent !== window) {
+    if (
+      typeof window !== "undefined" &&
+      window.parent &&
+      window.parent !== window
+    ) {
       try {
-        window.parent.postMessage({
-          type: 'FRAME_DEBUG',
-          message,
-          data
-        }, '*');
+        window.parent.postMessage(
+          {
+            type: "FRAME_DEBUG",
+            message,
+            data,
+          },
+          "*",
+        );
       } catch (e) {
         // Ignore postMessage errors
       }
@@ -34,8 +41,6 @@ interface KeyInfo {
 
 type ChainType = "evm" | "solana" | "bitcoin";
 
-// No Buffer polyfill needed anymore
-
 const Frame: React.FC = () => {
   const [evmKeys, setEvmKeys] = useState<KeyInfo | null>(null);
   const [solanaKeys, setSolanaKeys] = useState<KeyInfo | null>(null);
@@ -46,55 +51,75 @@ const Frame: React.FC = () => {
 
   // Add a state to track component mounting
   const [isMounted, setIsMounted] = useState(false);
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const [context, setContext] = useState<FrameContext>();
+
+  useEffect(() => {
+    const initializeSDK = async () => {
+      setContext(await sdk.context);
+      sdk.actions.ready();
+      setIsSDKLoaded(true);
+    };
+    console.log("useEffect sdk", sdk, isSDKLoaded);
+    if (sdk && !isSDKLoaded) {
+      initializeSDK();
+    }
+  }, [isSDKLoaded]);
 
   // Basic initialization - just check if we're in a browser
   useEffect(() => {
     try {
-      debugLog('Component mounting');
+      debugLog("Component mounting");
       setIsMounted(true);
-      
+
       // Check if we're in an iframe
-      const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+      const isInIframe =
+        typeof window !== "undefined" && window.self !== window.top;
       debugLog(`Running in iframe: ${isInIframe}`);
-      
+
       // Check browser features
-      debugLog('Browser features check', {
-        hasWindow: typeof window !== 'undefined',
-        hasLocalStorage: typeof localStorage !== 'undefined',
-        hasIndexedDB: typeof indexedDB !== 'undefined',
-        hasWebCrypto: typeof window !== 'undefined' && !!window.crypto,
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+      debugLog("Browser features check", {
+        hasWindow: typeof window !== "undefined",
+        hasLocalStorage: typeof localStorage !== "undefined",
+        hasIndexedDB: typeof indexedDB !== "undefined",
+        hasWebCrypto: typeof window !== "undefined" && !!window.crypto,
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
       });
     } catch (error) {
-      debugLog('Error during mount', error);
+      debugLog("Error during mount", error);
     }
   }, []);
 
   // Load crypto libraries dynamically
   useEffect(() => {
     if (!isMounted) return;
-    
+
     const loadCryptoLibs = async () => {
-      debugLog('Starting to load crypto libraries');
-      
+      debugLog("Starting to load crypto libraries");
+
       try {
         // Only attempt to load libraries in browser environment
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           // Test ethers.js first
           try {
             const randomWallet = ethers.Wallet.createRandom();
-            debugLog('Ethers.js test successful', { address: randomWallet.address.substring(0, 10) + '...' });
+            debugLog("Ethers.js test successful", {
+              address: randomWallet.address.substring(0, 10) + "...",
+            });
           } catch (ethersError) {
-            debugLog('Ethers.js test failed', ethersError);
+            debugLog("Ethers.js test failed", ethersError);
           }
-          
+
           // We'll set this to true even if some libs fail - we'll handle individual failures in the generation functions
           setCryptoLibsLoaded(true);
-          debugLog('Crypto libraries loaded successfully');
+          debugLog("Crypto libraries loaded successfully");
         }
       } catch (error) {
-        debugLog('Failed to load crypto libraries', error);
-        setLoadError("Failed to initialize cryptographic libraries. This may not work in all browsers or iframe contexts.");
+        debugLog("Failed to load crypto libraries", error);
+        setLoadError(
+          "Failed to initialize cryptographic libraries. This may not work in all browsers or iframe contexts.",
+        );
       }
     };
 
@@ -111,7 +136,9 @@ const Frame: React.FC = () => {
       });
     } catch (error) {
       console.error("Error generating EVM keys:", error);
-      setLoadError("Failed to generate EVM keys. This browser may have restrictions on cryptographic operations.");
+      setLoadError(
+        "Failed to generate EVM keys. This browser may have restrictions on cryptographic operations.",
+      );
     }
   }, []);
 
@@ -128,43 +155,49 @@ const Frame: React.FC = () => {
       });
     } catch (error) {
       console.error("Error generating Solana keys:", error);
-      setLoadError("Failed to generate Solana keys. This browser may have restrictions on cryptographic operations.");
+      setLoadError(
+        "Failed to generate Solana keys. This browser may have restrictions on cryptographic operations.",
+      );
     }
   }, []);
 
   const generateBitcoinKeys = useCallback(() => {
-    debugLog('Starting Bitcoin key generation');
-    
+    debugLog("Starting Bitcoin key generation");
+
     try {
       // Clear any previous messages
       setLoadError(null);
-      
+
       // Use the simplest possible approach
-      debugLog('Using simplified Bitcoin key generation');
-      
+      debugLog("Using simplified Bitcoin key generation");
+
       // Generate a random wallet with ethers
       const wallet = ethers.Wallet.createRandom();
       const ethAddress = wallet.address;
-      
+
       // Create a Bitcoin-like address format (not a real Bitcoin address)
       // This is just for demonstration purposes
       const address = `1${ethAddress.substring(2, 22)}`;
-      
+
       // Format private key in a way that looks like a Bitcoin WIF
       // This is not a real WIF but is suitable for demonstration
       const privateKeyWIF = `KY${wallet.privateKey.substring(2, 51)}`;
-      
+
       setBitcoinKeys({
         privateKey: privateKeyWIF,
         address: address,
       });
-      
-      debugLog('Bitcoin key generation successful (simplified method)');
-      setLoadError("Note: Using simplified Bitcoin key generation for compatibility. These are not standard Bitcoin keys but are suitable for demonstration purposes.");
+
+      debugLog("Bitcoin key generation successful (simplified method)");
+      setLoadError(
+        "Note: Using simplified Bitcoin key generation for compatibility. These are not standard Bitcoin keys but are suitable for demonstration purposes.",
+      );
     } catch (error) {
-      debugLog('Error in Bitcoin key generation', error);
+      debugLog("Error in Bitcoin key generation", error);
       console.error("Error generating Bitcoin keys:", error);
-      setLoadError("Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations.");
+      setLoadError(
+        "Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations.",
+      );
     }
   }, []);
 
@@ -206,6 +239,8 @@ const Frame: React.FC = () => {
     return <div className="p-4 text-center">Loading key generator...</div>;
   }
 
+  if (!isSDKLoaded) return <div>Loading...</div>;
+
   return (
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold text-center mb-4">
@@ -226,11 +261,13 @@ const Frame: React.FC = () => {
 
       {/* Error/Info message if libraries failed to load or using compatibility mode */}
       {loadError && (
-        <div className={`mb-6 p-3 rounded ${
-          loadError.startsWith("Note:") 
-            ? "bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-800 dark:text-blue-200" 
-            : "bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200"
-        }`}>
+        <div
+          className={`mb-6 p-3 rounded ${
+            loadError.startsWith("Note:")
+              ? "bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-800 dark:text-blue-200"
+              : "bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200"
+          }`}
+        >
           <p className="text-sm">{loadError}</p>
         </div>
       )}
