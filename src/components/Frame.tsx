@@ -1,72 +1,115 @@
-"use client"; // Required for useState and event handlers
+"use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
-import { Keypair } from "@solana/web3.js";
-import * as bitcoin from "bitcoinjs-lib";
-import ECPairFactory from "ecpair";
-import * as ecc from "tiny-secp256k1";
-import { Buffer } from "buffer"; // Import Buffer
 
 interface KeyInfo {
   privateKey: string;
-  publicKey?: string; // Made optional as we won't always display/use it
+  publicKey?: string;
   address: string;
 }
 
 type ChainType = "evm" | "solana" | "bitcoin";
-try {
-  const ECPair = ECPairFactory(ecc);
-} catch (error) {
-  console.error("Error initializing ECPair:", error);
+
+// Add Buffer polyfill for browser environment
+if (typeof window !== 'undefined') {
+  window.Buffer = window.Buffer || require('buffer/').Buffer;
 }
 
 const Frame: React.FC = () => {
   const [evmKeys, setEvmKeys] = useState<KeyInfo | null>(null);
   const [solanaKeys, setSolanaKeys] = useState<KeyInfo | null>(null);
-  const [bitcoinKeys, setBitcoinKeys] = useState<KeyInfo | null>(null); // Added state for Bitcoin
-  const [selectedChain, setSelectedChain] = useState<ChainType>("evm"); // State for toggling
+  const [bitcoinKeys, setBitcoinKeys] = useState<KeyInfo | null>(null);
+  const [selectedChain, setSelectedChain] = useState<ChainType>("evm");
+  const [cryptoLibsLoaded, setCryptoLibsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Load crypto libraries dynamically
+  useEffect(() => {
+    const loadCryptoLibs = async () => {
+      try {
+        // Only attempt to load libraries in browser environment
+        if (typeof window !== 'undefined') {
+          // We'll set this to true even if some libs fail - we'll handle individual failures in the generation functions
+          setCryptoLibsLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to load crypto libraries:", error);
+        setLoadError("Failed to initialize cryptographic libraries. This may not work in all browsers or iframe contexts.");
+      }
+    };
+
+    loadCryptoLibs();
+  }, []);
 
   const generateEvmKeys = useCallback(() => {
-    const wallet = ethers.Wallet.createRandom();
-    setEvmKeys({
-      privateKey: wallet.privateKey,
-      publicKey: wallet.publicKey, // Still generated, just not displayed
-      address: wallet.address,
-    });
-  }, []);
-
-  const generateSolanaKeys = useCallback(() => {
-    const keypair = Keypair.generate();
-    const privateKeyString = `[${keypair.secretKey.toString()}]`; // Representing the byte array
-    setSolanaKeys({
-      privateKey: privateKeyString,
-      publicKey: keypair.publicKey.toBase58(), // Still generated, just not displayed
-      address: keypair.publicKey.toBase58(), // In Solana, the public key is the address
-    });
-  }, []);
-
-  // Added function to generate Bitcoin keys
-  const generateBitcoinKeys = useCallback(() => {
-    const keyPair = ECPair.makeRandom();
-    // Convert publicKey from Uint8Array to Buffer for bitcoinjs-lib
-    const { address } = bitcoin.payments.p2pkh({
-      pubkey: Buffer.from(keyPair.publicKey),
-    });
-    const privateKeyWIF = keyPair.toWIF(); // Wallet Import Format
-
-    if (!address) {
-      // Handle the unlikely case where address generation fails
-      console.error("Failed to generate Bitcoin address.");
-      setBitcoinKeys(null);
-      return;
+    try {
+      const wallet = ethers.Wallet.createRandom();
+      setEvmKeys({
+        privateKey: wallet.privateKey,
+        publicKey: wallet.publicKey,
+        address: wallet.address,
+      });
+    } catch (error) {
+      console.error("Error generating EVM keys:", error);
+      setLoadError("Failed to generate EVM keys. This browser may have restrictions on cryptographic operations.");
     }
+  }, []);
 
-    setBitcoinKeys({
-      privateKey: privateKeyWIF,
-      // publicKey: keyPair.publicKey.toString('hex'), // We could store it, but won't display
-      address: address,
-    });
+  const generateSolanaKeys = useCallback(async () => {
+    try {
+      // Dynamically import Solana only when needed
+      const { Keypair } = await import("@solana/web3.js");
+      const keypair = Keypair.generate();
+      const privateKeyString = `[${keypair.secretKey.toString()}]`;
+      setSolanaKeys({
+        privateKey: privateKeyString,
+        publicKey: keypair.publicKey.toBase58(),
+        address: keypair.publicKey.toBase58(),
+      });
+    } catch (error) {
+      console.error("Error generating Solana keys:", error);
+      setLoadError("Failed to generate Solana keys. This browser may have restrictions on cryptographic operations.");
+    }
+  }, []);
+
+  const generateBitcoinKeys = useCallback(async () => {
+    try {
+      // Dynamically import Bitcoin libraries only when needed
+      const bitcoin = await import("bitcoinjs-lib");
+      const ecc = await import("tiny-secp256k1");
+      const ECPairFactory = (await import("ecpair")).default;
+      
+      // Create a window.Buffer polyfill if needed
+      if (typeof window !== 'undefined' && !window.Buffer) {
+        const { Buffer } = await import("buffer/");
+        window.Buffer = Buffer;
+      }
+      
+      const ECPair = ECPairFactory(ecc);
+      const keyPair = ECPair.makeRandom();
+      
+      // Use Buffer safely
+      const pubkeyBuffer = Buffer.from(keyPair.publicKey);
+      
+      const { address } = bitcoin.payments.p2pkh({
+        pubkey: pubkeyBuffer,
+      });
+      
+      const privateKeyWIF = keyPair.toWIF();
+
+      if (!address) {
+        throw new Error("Failed to generate Bitcoin address");
+      }
+
+      setBitcoinKeys({
+        privateKey: privateKeyWIF,
+        address: address,
+      });
+    } catch (error) {
+      console.error("Error generating Bitcoin keys:", error);
+      setLoadError("Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations.");
+    }
   }, []);
 
   // Helper component to display key details - Removed Public Key display
@@ -120,6 +163,13 @@ const Frame: React.FC = () => {
         </p>
       </div>
 
+      {/* Error message if libraries failed to load */}
+      {loadError && (
+        <div className="mb-6 p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 rounded text-yellow-800 dark:text-yellow-200">
+          <p className="text-sm">{loadError}</p>
+        </div>
+      )}
+
       {/* Chain Toggle Buttons - Added Bitcoin */}
       <div className="flex justify-center space-x-2 md:space-x-4 mb-6">
         <button
@@ -161,6 +211,7 @@ const Frame: React.FC = () => {
             <button
               onClick={generateEvmKeys}
               className="px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
+              disabled={!cryptoLibsLoaded}
             >
               Generate EVM Keys
             </button>
@@ -179,6 +230,7 @@ const Frame: React.FC = () => {
             <button
               onClick={generateSolanaKeys}
               className="px-6 py-2 bg-purple-600 text-white font-semibold rounded hover:bg-purple-700 transition-colors"
+              disabled={!cryptoLibsLoaded}
             >
               Generate Solana Keys
             </button>
@@ -187,13 +239,14 @@ const Frame: React.FC = () => {
         </div>
       )}
 
-      {/* Added Bitcoin Section */}
+      {/* Bitcoin Section */}
       {selectedChain === "bitcoin" && (
         <div>
           <div className="flex justify-center mb-4">
             <button
               onClick={generateBitcoinKeys}
               className="px-6 py-2 bg-yellow-500 text-black font-semibold rounded hover:bg-yellow-600 transition-colors"
+              disabled={!cryptoLibsLoaded}
             >
               Generate Bitcoin Keys
             </button>
