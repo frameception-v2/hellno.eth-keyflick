@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
 import sdk from "@farcaster/frame-sdk";
-import { FrameContext } from "@farcaster/frame-node";
 
 // Add a debug logging function that works in iframe contexts
 const debugLog = (message: string, data?: any) => {
@@ -53,15 +52,12 @@ const Frame: React.FC = () => {
   // Add a state to track component mounting
   const [isMounted, setIsMounted] = useState(false);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
 
   useEffect(() => {
     const initializeSDK = async () => {
-      setContext(await sdk.context);
       sdk.actions.ready();
       setIsSDKLoaded(true);
     };
-    console.log("useEffect sdk", sdk, isSDKLoaded);
     if (sdk && !isSDKLoaded) {
       initializeSDK();
     }
@@ -168,25 +164,25 @@ const Frame: React.FC = () => {
     try {
       // Clear any previous messages
       setLoadError(null);
-      
+
       // Dynamically import Bitcoin libraries only when needed
       const bitcoin = await import("bitcoinjs-lib");
       const ecc = await import("tiny-secp256k1");
       const { ECPairFactory } = await import("ecpair");
-      
+
       // Initialize ECPair with the secp256k1 implementation
       const ECPair = ECPairFactory(ecc);
-      
+
       // Generate a random key pair
       const keyPair = ECPair.makeRandom();
-      
+
       // Get the private key in WIF format
       const privateKeyWIF = keyPair.toWIF();
-      
+
       // Create a P2PKH address (Legacy Bitcoin address)
-      const { address } = bitcoin.payments.p2pkh({ 
+      const { address } = bitcoin.payments.p2pkh({
         pubkey: keyPair.publicKey,
-        network: bitcoin.networks.bitcoin 
+        network: bitcoin.networks.bitcoin,
       });
 
       setBitcoinKeys({
