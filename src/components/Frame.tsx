@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
+import * as bip39 from "bip39";
 
 interface KeyInfo {
   privateKey: string;
@@ -70,29 +71,102 @@ const Frame: React.FC = () => {
     }
   }, []);
 
-  const generateBitcoinKeys = useCallback(() => {
+  const generateBitcoinKeys = useCallback(async () => {
     try {
-      // Use ethers.js to generate a random wallet and derive Bitcoin-like keys from it
-      // This is not a real Bitcoin wallet but works for demo/educational purposes
-      const wallet = ethers.Wallet.createRandom();
+      // Clear any previous messages
+      setLoadError(null);
       
-      // Create a simple Bitcoin-like address (this is just for demonstration)
-      // Real Bitcoin address derivation would use proper BIP32/39/44 derivation
-      const address = `1${wallet.address.substring(2, 22)}`;
+      // Generate a random mnemonic (seed phrase)
+      const mnemonic = bip39.generateMnemonic();
       
-      // Format private key in WIF-like format (not real WIF, just for display)
-      const privateKeyWIF = `KY${wallet.privateKey.substring(2, 51)}`;
+      // Convert mnemonic to seed
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      
+      // Load bitcoinjs-lib dynamically
+      const bitcoin = await import("bitcoinjs-lib");
+      
+      // Create a BIP32 master key from the seed
+      const bip32 = await import("bip32");
+      const root = bip32.fromSeed(seed);
+      
+      // Derive the first Bitcoin address (m/44'/0'/0'/0/0 path)
+      const path = "m/44'/0'/0'/0/0";
+      const child = root.derivePath(path);
+      
+      // Get the private key in WIF format
+      const privateKey = child.privateKey;
+      if (!privateKey) throw new Error("Failed to generate private key");
+      
+      const network = bitcoin.networks.bitcoin;
+      const privateKeyWIF = bitcoin.ECPair.fromPrivateKey(privateKey, { network }).toWIF();
+      
+      // Generate the address
+      const { address } = bitcoin.payments.p2pkh({
+        pubkey: child.publicKey,
+        network
+      });
+      
+      if (!address) throw new Error("Failed to generate Bitcoin address");
       
       setBitcoinKeys({
         privateKey: privateKeyWIF,
         address: address,
+        publicKey: child.publicKey.toString('hex')
       });
       
-      // Set a note that this is using simplified Bitcoin key generation
-      setLoadError("Note: Using simplified Bitcoin key generation for compatibility. These are not real Bitcoin keys but are suitable for demonstration purposes.");
     } catch (error) {
       console.error("Error generating Bitcoin keys:", error);
-      setLoadError("Failed to generate Bitcoin keys. This browser may have restrictions on cryptographic operations.");
+      
+      // Fallback to a simpler method if the main one fails
+      try {
+        // Generate a random mnemonic
+        const mnemonic = bip39.generateMnemonic();
+        
+        // Use a hash of the mnemonic as the private key
+        const { createHash } = await import('crypto-browserify');
+        const privateKeyBytes = createHash('sha256').update(mnemonic).digest();
+        
+        // Load bitcoinjs-lib
+        const bitcoin = await import("bitcoinjs-lib");
+        
+        // Create key pair from private key
+        const keyPair = bitcoin.ECPair.fromPrivateKey(Buffer.from(privateKeyBytes));
+        
+        // Generate address
+        const { address } = bitcoin.payments.p2pkh({
+          pubkey: keyPair.publicKey,
+        });
+        
+        // Get WIF format private key
+        const privateKeyWIF = keyPair.toWIF();
+        
+        if (!address) throw new Error("Failed to generate Bitcoin address");
+        
+        setBitcoinKeys({
+          privateKey: privateKeyWIF,
+          address: address,
+        });
+        
+        setLoadError("Note: Using alternative Bitcoin key generation method that works in all browsers.");
+      } catch (fallbackError) {
+        console.error("Fallback Bitcoin key generation failed:", fallbackError);
+        
+        // Ultimate fallback - use a deterministic but not real Bitcoin address
+        const wallet = ethers.Wallet.createRandom();
+        const ethAddress = wallet.address;
+        
+        // Create a Bitcoin-like address using a hash of the Ethereum address
+        const { createHash } = await import('crypto-browserify');
+        const hash = createHash('sha256').update(ethAddress).digest('hex');
+        const address = `1${hash.substring(0, 20)}`;
+        
+        setBitcoinKeys({
+          privateKey: wallet.privateKey,
+          address: address,
+        });
+        
+        setLoadError("Note: Using simplified Bitcoin key generation for compatibility. These are not standard Bitcoin keys but are suitable for demonstration purposes.");
+      }
     }
   }, []);
 
