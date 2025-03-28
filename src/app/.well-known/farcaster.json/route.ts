@@ -1,17 +1,20 @@
-import { NextResponse } from 'next/server';
-import { PROJECT_TITLE } from '~/lib/constants'; // Assuming constants are in src/lib
+import { NextResponse } from "next/server";
+import { PROJECT_TITLE } from "~/lib/constants"; // Assuming constants are in src/lib
 
 // Define the application URL based on the domain in accountAssociation or environment variable
 // Using the domain from the provided payload as a fallback
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://hellnoeth-keyflick.vercel.app';
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL || "https://hellnoeth-keyflick.vercel.app";
 const name = PROJECT_TITLE; // Use project title for the frame name
 
 export async function GET() {
   // The specific account association data provided
   const accountAssociation = {
-    header: 'eyJmaWQiOiA4Njk5OTksICJ0eXBlIjogImN1c3RvZHkiLCAia2V5IjogIjB4NzZkNTBCMEUxNDc5YTlCYTJiRDkzNUYxRTlhMjdDMGM2NDlDOEMxMiJ9',
-    payload: 'eyJkb21haW4iOiAiaGVsbG5vZXRoLWtleWZsaWNrLnZlcmNlbC5hcHAifQ',
-    signature: 'pKDeGOWamw3zHsvkE84XKnjFcjv5lQgs49-WvDC4AA1Bm5gEkZj3Oq9MfW4r3LsDUrQ5FzJcag0GNa_9j0DkEBw'
+    header:
+      "eyJmaWQiOjg2OTk5OSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDc2ZDUwQjBFMTQ3OWE5QmEyYkQ5MzVGMUU5YTI3QzBjNjQ5QzhDMTIifQ",
+    payload: "eyJkb21haW4iOiJoZWxsbm9ldGgta2V5ZmxpY2sudmVyY2VsLmFwcCJ9",
+    signature:
+      "MHhhNGM4MDNiOTkzNzJmYjQwNDE4MjZhMjMzYjk2ZDg4YWE3NWIwOTQ1MTM4OWQ3YjJiM2NhNzVhZDRlYzg2MmU5NzEzZWMyMThmMGJiMGI3MjkwNzE2YzYzMDllZDMxYjEwZDgyMzk1YTBhODQ3MDczZDNiNDlkZTBiOWMyM2M0YTFj",
   };
 
   // The frame configuration details
